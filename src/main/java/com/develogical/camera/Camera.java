@@ -1,11 +1,12 @@
 package com.develogical.camera;
 
-public class Camera implements WriteCompleteListener {
+public class Camera {
 
-    Sensor sensor;
-    MemoryCard card;
-    boolean isOn;
-    boolean isCurrentlyWriting;
+    private final Sensor sensor;
+    private final MemoryCard card;
+    
+    private boolean isOn;
+    private boolean isCurrentlyWriting;
 
     public Camera(Sensor sensorIn, MemoryCard cardIn) {
         sensor = sensorIn;
@@ -17,7 +18,12 @@ public class Camera implements WriteCompleteListener {
         if (isOn) {
             byte[] data = sensor.readData();
             isCurrentlyWriting = true;
-            card.write(data, this);
+            card.write(data, () -> {
+                isCurrentlyWriting = false;
+                if (!isOn) {
+                    sensor.powerDown();
+                }
+            });
         }
     }
 
@@ -27,16 +33,11 @@ public class Camera implements WriteCompleteListener {
     }
 
     public void powerOff() {
-        if (!isCurrentlyWriting){
-            isOn = false;
+        isOn = false;
+        if (!isCurrentlyWriting) {
             sensor.powerDown();
         }
-
     }
 
-    @Override
-    public void writeComplete() {
-        isCurrentlyWriting = false;
-    }
 }
 

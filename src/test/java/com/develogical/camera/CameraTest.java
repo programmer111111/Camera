@@ -47,7 +47,7 @@ public class CameraTest {
 
         //  Take photo
         camera.pressShutter();
-        verify(card).write(sensor.readData(), camera);
+        verify(card).write(eq(sensor.readData()), any());
     }
 
     @Test
@@ -77,9 +77,27 @@ public class CameraTest {
         camera.powerOff();
         verify(sensor, times(0)).powerDown();
 
-        camera.writeComplete();
-        camera.powerOff();
+        ArgumentCaptor<WriteCompleteListener> argument = ArgumentCaptor.forClass(WriteCompleteListener.class);
+        verify(card).write(any(), argument.capture());
+        argument.getValue().writeComplete();
+
         verify(sensor).powerDown();
     }
 
+    @Test
+    public void leaveSensorPoweredUpAfterWritingData(){
+        MemoryCard card = mock(MemoryCard.class);
+        Sensor sensor = mock(Sensor.class);
+
+        Camera camera = new Camera(sensor, card);
+
+        camera.powerOn();
+        camera.pressShutter();
+
+        ArgumentCaptor<WriteCompleteListener> argument = ArgumentCaptor.forClass(WriteCompleteListener.class);
+        verify(card).write(any(), argument.capture());
+        argument.getValue().writeComplete();
+
+        verify(sensor, times(0)).powerDown();
+    }
 }
